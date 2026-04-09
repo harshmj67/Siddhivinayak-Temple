@@ -273,7 +273,7 @@ function App() {
             </label>
             <input
               type="range"
-              min="-2"
+              min="-8"
               max="5"
               step="0.1"
               value={heightValue}
