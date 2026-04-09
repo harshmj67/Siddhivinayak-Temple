@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ModelViewer from "./ModelViewer";
+import { error } from "three";
 
 function App() {
+  const viewerRef = useRef(null);
+
   const [objects, setObjects] = useState([
     {
       url: "/models/temple_clean.stl",
       position: [0, -0.7, 0],
       scale: [0.05, 0.05, 0.05],
-      color: "orange",
+      color: "#f5f5f5",
       rotation: [-Math.PI / 2, 0, 0],
       spin: 0,
+      objectType: "temple",
     },
   ]);
 
@@ -24,6 +28,9 @@ function App() {
       setHeightValue(objects[selectedIndex].position[1]);
     }
   }, [selectedIndex, objects]);
+
+  const selectedObject =
+    selectedIndex !== null ? objects[selectedIndex] : null;
 
   const clampToFloorArea = (point, currentIndex) => {
     const currentY = objects[currentIndex]?.position?.[1] ?? -0.7;
@@ -51,9 +58,10 @@ function App() {
         url: "/models/ganesha.stl",
         position: [0, -0.7, 6],
         scale: [0.015, 0.015, 0.015],
-        color: "pink",
+        color: "#ffb6c1",
         rotation: [-Math.PI / 2, 0, 0],
         spin: 0,
+        objectType: "ganesha",
       },
     ]);
   };
@@ -68,6 +76,7 @@ function App() {
         color: "gold",
         rotation: [0, 0, 0],
         spin: 0,
+        objectType: "bell",
       },
     ]);
   };
@@ -131,13 +140,16 @@ function App() {
 
   const moveSelectedHeight = (value) => {
     if (selectedIndex === null) return;
+    if (selectedObject?.objectType === "temple") return;
+
+    const safeY = Math.max(-6, value);
 
     setObjects((prev) =>
       prev.map((obj, i) =>
         i === selectedIndex
           ? {
               ...obj,
-              position: [obj.position[0], value, obj.position[2]],
+              position: [obj.position[0], safeY, obj.position[2]],
             }
           : obj
       )
@@ -160,6 +172,10 @@ function App() {
     setObjects((prev) => prev.filter((_, i) => i !== selectedIndex));
     setSelectedIndex(null);
     setDraggingIndex(null);
+  };
+
+  const downloadImage = () => {
+    viewerRef.current?.downloadScreenshot();
   };
 
   const saveDesign = () => {
@@ -186,8 +202,18 @@ function App() {
       });
 
       if (!res.ok) {
-        throw new Error("Export failed");
+        let errorMessage = `Export failed with status ${res.status}`;
+      
+        try {
+        const errorData = await res.json();
+        errorMessage = errorData.detail || errorMessage;
+      } catch {
+        const errorText = await res.text();
+        if (errorText) errorMessage = errorText;
       }
+
+      throw new Error(errorMessage);
+    }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -202,8 +228,110 @@ function App() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      alert("Export failed. Make sure backend is running.");
+      alert(`Export failed: ${error.message}`);
     }
+  };
+
+  const renderObjectControls = () => {
+    if (!selectedObject) return null;
+
+    if (selectedObject.objectType === "temple") {
+      return (
+        <>
+          <label style={styles.label}>
+            Temple Scale: {scaleValue.toFixed(3)}
+          </label>
+          <input
+            type="range"
+            min="0.03"
+            max="0.09"
+            step="0.001"
+            value={scaleValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setScaleValue(val);
+              scaleSelected(val);
+            }}
+          />
+        </>
+      );
+    }
+
+    if (selectedObject.objectType === "ganesha") {
+      return (
+        <>
+          <label style={styles.label}>
+            Ganesha Scale: {scaleValue.toFixed(3)}
+          </label>
+          <input
+            type="range"
+            min="0.008"
+            max="0.05"
+            step="0.001"
+            value={scaleValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setScaleValue(val);
+              scaleSelected(val);
+            }}
+          />
+
+          <label style={styles.label}>
+            Ganesha Height (Y): {heightValue.toFixed(2)}
+          </label>
+          <input
+            type="range"
+            min="-6"
+            max="5"
+            step="0.1"
+            value={heightValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setHeightValue(val);
+              moveSelectedHeight(val);
+            }}
+          />
+        </>
+      );
+    }
+
+    if (selectedObject.objectType === "bell") {
+      return (
+        <>
+          <label style={styles.label}>Bell Scale: {scaleValue.toFixed(3)}</label>
+          <input
+            type="range"
+            min="0.005"
+            max="0.03"
+            step="0.001"
+            value={scaleValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setScaleValue(val);
+              scaleSelected(val);
+            }}
+          />
+
+          <label style={styles.label}>
+            Bell Height (Y): {heightValue.toFixed(2)}
+          </label>
+          <input
+            type="range"
+            min="-6"
+            max="3"
+            step="0.1"
+            value={heightValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setHeightValue(val);
+              moveSelectedHeight(val);
+            }}
+          />
+        </>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -211,6 +339,7 @@ function App() {
       <h2>Temple Configurator</h2>
 
       <ModelViewer
+        ref={viewerRef}
         objects={objects}
         onDrag={handleDrag}
         onSelect={handleSelect}
@@ -218,25 +347,12 @@ function App() {
         selectedIndex={selectedIndex}
       />
 
-      <div
-        style={{
-          position: "fixed",
-          right: "20px",
-          top: "100px",
-          background: "#fff",
-          padding: "20px",
-          borderRadius: "10px",
-          boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          minWidth: "240px",
-        }}
-      >
+      <div style={styles.panel}>
         <h3 style={{ margin: 0 }}>Controls</h3>
 
         <button onClick={addGanesha}>Add Ganesha</button>
         <button onClick={addBell}>Add Bell</button>
+        <button onClick={downloadImage}>Download Image</button>
 
         <button onClick={rotateSelected} disabled={selectedIndex === null}>
           Rotate Selected
@@ -250,41 +366,7 @@ function App() {
           Deselect
         </button>
 
-        {selectedIndex !== null && (
-          <>
-            <label style={{ textAlign: "left", fontWeight: "bold" }}>
-              Scale: {scaleValue.toFixed(3)}
-            </label>
-            <input
-              type="range"
-              min="0.005"
-              max="0.1"
-              step="0.001"
-              value={scaleValue}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                setScaleValue(val);
-                scaleSelected(val);
-              }}
-            />
-
-            <label style={{ textAlign: "left", fontWeight: "bold" }}>
-              Height (Y): {heightValue.toFixed(2)}
-            </label>
-            <input
-              type="range"
-              min="-8"
-              max="5"
-              step="0.1"
-              value={heightValue}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                setHeightValue(val);
-                moveSelectedHeight(val);
-              }}
-            />
-          </>
-        )}
+        {renderObjectControls()}
 
         <button onClick={saveDesign}>Save Design</button>
         <button onClick={loadDesign}>Load Design</button>
@@ -293,5 +375,25 @@ function App() {
     </div>
   );
 }
+
+const styles = {
+  panel: {
+    position: "fixed",
+    right: "20px",
+    top: "100px",
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0 0 10px rgba(0,0,0,0.2)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    minWidth: "240px",
+  },
+  label: {
+    textAlign: "left",
+    fontWeight: "bold",
+  },
+};
 
 export default App;

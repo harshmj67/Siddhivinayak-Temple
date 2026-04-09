@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import cadquery as cq
@@ -7,8 +8,14 @@ import os
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# ---------- Request Models ----------
 
 class SceneObject(BaseModel):
     url: str
@@ -16,13 +23,12 @@ class SceneObject(BaseModel):
     scale: List[float]
     color: str
     rotation: List[float]
+    spin: float = 0
 
 
 class ExportRequest(BaseModel):
     objects: List[SceneObject]
 
-
-# ---------- Helpers ----------
 
 OUTPUT_DIR = "output"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "temple_design.stl")
@@ -33,20 +39,10 @@ def ensure_output_dir():
 
 
 def safe_box_at(x: float, y: float, z: float, sx: float, sy: float, sz: float):
-    """
-    Create a simple box placeholder centered at position.
-    """
-    return (
-        cq.Workplane("XY")
-        .box(sx, sy, sz)
-        .translate((x, y, z))
-    )
+    return cq.Workplane("XY").box(sx, sy, sz).translate((x, y, z))
 
 
 def safe_cylinder_at(x: float, y: float, z: float, radius: float, height: float):
-    """
-    Create a simple cylinder placeholder centered at position.
-    """
     return (
         cq.Workplane("XY")
         .circle(radius)
@@ -56,20 +52,12 @@ def safe_cylinder_at(x: float, y: float, z: float, radius: float, height: float)
 
 
 def build_scene(objects: List[SceneObject]):
-    """
-    Build a simplified export scene using parametric placeholder geometry.
-    Temple -> large base block
-    Ganesha -> smaller decorative box
-    Bell -> small cylinder
-    """
     scene = None
 
     for obj in objects:
         x, y, z = obj.position
         sx, sy, sz = obj.scale
 
-        # Convert tiny frontend scales into useful backend dimensions
-        # You can tune these multipliers later.
         if "temple" in obj.url.lower():
             shape = safe_box_at(
                 x=x,
@@ -79,7 +67,6 @@ def build_scene(objects: List[SceneObject]):
                 sy=max(20, 120 * sy),
                 sz=max(20, 200 * sz),
             )
-
         elif "ganesha" in obj.url.lower():
             shape = safe_box_at(
                 x=x,
@@ -89,7 +76,6 @@ def build_scene(objects: List[SceneObject]):
                 sy=max(6, 160 * sy),
                 sz=max(4, 120 * sz),
             )
-
         elif "bell" in obj.url.lower():
             shape = safe_cylinder_at(
                 x=x,
@@ -98,9 +84,7 @@ def build_scene(objects: List[SceneObject]):
                 radius=max(1.5, 60 * sx),
                 height=max(4, 120 * sy),
             )
-
         else:
-            # Generic fallback
             shape = safe_box_at(
                 x=x,
                 y=y,
@@ -115,8 +99,6 @@ def build_scene(objects: List[SceneObject]):
     return scene
 
 
-# ---------- Routes ----------
-
 @app.get("/")
 def home():
     return {"message": "Temple configurator backend is running"}
@@ -130,18 +112,25 @@ def export_model(data: ExportRequest):
         raise HTTPException(status_code=400, detail="No objects received for export")
 
     try:
+        print("Received objects:", data.objects)
+
         model = build_scene(data.objects)
 
         if model is None:
             raise HTTPException(status_code=400, detail="Failed to build scene")
 
-        cq.exporters.export(model, OUTPUT_FILE)
+        cq.exporters.export(model.val(), OUTPUT_FILE)
+
+        print("Export successful:", OUTPUT_FILE)
 
         return FileResponse(
-            OUTPUT_FILE,
+            path=OUTPUT_FILE,
             media_type="application/sla",
             filename="temple_design.stl"
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        print("EXPORT ERROR:", repr(e))
+        raise HTTPException(status_code=500, detail=f"Export failed: {repr(e)}")
