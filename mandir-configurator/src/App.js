@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import ModelViewer from "./ModelViewer";
-import { error } from "three";
+import "./App.css";
 
 function App() {
   const viewerRef = useRef(null);
 
   const [objects, setObjects] = useState([
     {
-      url: "/models/temple_clean.stl",
+      url: "/models/Temple.stl",
       position: [0, -0.7, 0],
       scale: [0.05, 0.05, 0.05],
       color: "#f5f5f5",
-      rotation: [-Math.PI / 2, 0, 0],
+      materialType: "marble",
+      rotation: [0, 0, 0],
       spin: 0,
       objectType: "temple",
     },
@@ -29,8 +30,7 @@ function App() {
     }
   }, [selectedIndex, objects]);
 
-  const selectedObject =
-    selectedIndex !== null ? objects[selectedIndex] : null;
+  const selectedObject = selectedIndex !== null ? objects[selectedIndex] : null;
 
   const clampToFloorArea = (point, currentIndex) => {
     const currentY = objects[currentIndex]?.position?.[1] ?? -0.7;
@@ -42,11 +42,9 @@ function App() {
   const isColliding = (newPos, currentIndex) => {
     return objects.some((obj, i) => {
       if (i === 0 || i === currentIndex) return false;
-
       const dx = obj.position[0] - newPos[0];
       const dz = obj.position[2] - newPos[2];
       const distance = Math.sqrt(dx * dx + dz * dz);
-
       return distance < 1;
     });
   };
@@ -55,10 +53,11 @@ function App() {
     setObjects((prev) => [
       ...prev,
       {
-        url: "/models/ganesha.stl",
+        url: "/models/Ganesha.stl",
         position: [0, -0.7, 6],
         scale: [0.015, 0.015, 0.015],
         color: "#ffb6c1",
+        materialType: "marble",
         rotation: [-Math.PI / 2, 0, 0],
         spin: 0,
         objectType: "ganesha",
@@ -66,14 +65,15 @@ function App() {
     ]);
   };
 
-  const addBell = () => {
+  const addBell01 = () => {
     setObjects((prev) => [
       ...prev,
       {
-        url: "/models/bell.stl",
+        url: "/models/Bell_01.stl",
         position: [2, -0.7, 6],
         scale: [0.01, 0.01, 0.01],
-        color: "gold",
+        color: "#D4AF37",
+        materialType: "gold",
         rotation: [0, 0, 0],
         spin: 0,
         objectType: "bell",
@@ -81,7 +81,109 @@ function App() {
     ]);
   };
 
+  const addBell02 = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Bell_02.stl",
+        position: [-2, -0.7, 6],
+        scale: [0.01, 0.01, 0.01],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "bell",
+      },
+    ]);
+  };
+
+  const addBell03 = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Bell_03.stl",
+        position: [3, -0.7, 5],
+        scale: [0.01, 0.01, 0.01],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "bell",
+      },
+    ]);
+  };
+
+  const addBell04 = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Bell_04.stl",
+        position: [-3, -0.7, 5],
+        scale: [0.01, 0.01, 0.01],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "bell",
+      },
+    ]);
+  };
+
+  const addChhattar = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Chhattar.stl",
+        position: [0, 2.5, 0],
+        scale: [0.02, 0.02, 0.02],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "chhattar",
+      },
+    ]);
+  };
+
+  const addKalash = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Kalash.stl",
+        position: [0, 3.2, 0],
+        scale: [0.015, 0.015, 0.015],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "kalash",
+      },
+    ]);
+  };
+
+  const addNamePatti = () => {
+    setObjects((prev) => [
+      ...prev,
+      {
+        url: "/models/Mandir_Name.stl",
+        position: [0, -0.2, 5],
+        scale: [0.02, 0.02, 0.02],
+        color: "#D4AF37",
+        materialType: "gold",
+        rotation: [0, 0, 0],
+        spin: 0,
+        objectType: "namePatti",
+      },
+    ]);
+  };
+
   const handleSelect = (index) => {
+    if (index === null) {
+      setSelectedIndex(null);
+      setDraggingIndex(null);
+      return;
+    }
+
     setSelectedIndex(index);
 
     if (index !== 0) {
@@ -114,10 +216,7 @@ function App() {
     setObjects((prev) =>
       prev.map((obj, i) =>
         i === selectedIndex
-          ? {
-              ...obj,
-              spin: (obj.spin || 0) + Math.PI / 8,
-            }
+          ? { ...obj, spin: (obj.spin || 0) + Math.PI / 8 }
           : obj
       )
     );
@@ -128,12 +227,7 @@ function App() {
 
     setObjects((prev) =>
       prev.map((obj, i) =>
-        i === selectedIndex
-          ? {
-              ...obj,
-              scale: [value, value, value],
-            }
-          : obj
+        i === selectedIndex ? { ...obj, scale: [value, value, value] } : obj
       )
     );
   };
@@ -147,10 +241,7 @@ function App() {
     setObjects((prev) =>
       prev.map((obj, i) =>
         i === selectedIndex
-          ? {
-              ...obj,
-              position: [obj.position[0], safeY, obj.position[2]],
-            }
+          ? { ...obj, position: [obj.position[0], safeY, obj.position[2]] }
           : obj
       )
     );
@@ -203,17 +294,15 @@ function App() {
 
       if (!res.ok) {
         let errorMessage = `Export failed with status ${res.status}`;
-      
         try {
-        const errorData = await res.json();
-        errorMessage = errorData.detail || errorMessage;
-      } catch {
-        const errorText = await res.text();
-        if (errorText) errorMessage = errorText;
+          const errorData = await res.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch {
+          const errorText = await res.text();
+          if (errorText) errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
-
-      throw new Error(errorMessage);
-    }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -232,101 +321,104 @@ function App() {
     }
   };
 
+  const selectedLabel = selectedObject
+    ? selectedObject.objectType.charAt(0).toUpperCase() +
+      selectedObject.objectType.slice(1)
+    : "None";
+
   const renderObjectControls = () => {
     if (!selectedObject) return null;
 
     if (selectedObject.objectType === "temple") {
       return (
         <>
-          <label style={styles.label}>
-            Temple Scale: {scaleValue.toFixed(3)}
-          </label>
-          <input
-            type="range"
-            min="0.03"
-            max="0.09"
-            step="0.001"
-            value={scaleValue}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setScaleValue(val);
-              scaleSelected(val);
-            }}
-          />
+          <div className="mc-slider-group">
+            <label className="mc-slider-label">
+              <span>Temple Scale</span>
+              <span className="mc-slider-value">{scaleValue.toFixed(3)}</span>
+            </label>
+            <input
+              type="range"
+              min="0.03"
+              max="0.09"
+              step="0.001"
+              value={scaleValue}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setScaleValue(val);
+                scaleSelected(val);
+              }}
+            />
+          </div>
+
+          <div className="mc-slider-group">
+            <label className="mc-slider-label">
+              <span>Temple Material</span>
+            </label>
+            <select
+              value={selectedObject.materialType || "marble"}
+              onChange={(e) => {
+                const materialType = e.target.value;
+                setObjects((prev) =>
+                  prev.map((obj, i) =>
+                    i === selectedIndex ? { ...obj, materialType } : obj
+                  )
+                );
+              }}
+            >
+              <option value="marble">White Marble</option>
+              <option value="wood">Wood</option>
+              <option value="gold">Gold</option>
+            </select>
+          </div>
         </>
       );
     }
 
-    if (selectedObject.objectType === "ganesha") {
+    if (
+      ["ganesha", "bell", "namePatti", "chhattar", "kalash"].includes(
+        selectedObject.objectType
+      )
+    ) {
       return (
         <>
-          <label style={styles.label}>
-            Ganesha Scale: {scaleValue.toFixed(3)}
-          </label>
-          <input
-            type="range"
-            min="0.008"
-            max="0.05"
-            step="0.001"
-            value={scaleValue}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setScaleValue(val);
-              scaleSelected(val);
-            }}
-          />
+          <div className="mc-slider-group">
+            <label className="mc-slider-label">
+              <span>{selectedLabel} Scale</span>
+              <span className="mc-slider-value">{scaleValue.toFixed(3)}</span>
+            </label>
+            <input
+              type="range"
+              min="0.005"
+              max="0.05"
+              step="0.001"
+              value={scaleValue}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setScaleValue(val);
+                scaleSelected(val);
+              }}
+            />
+          </div>
 
-          <label style={styles.label}>
-            Ganesha Height (Y): {heightValue.toFixed(2)}
-          </label>
-          <input
-            type="range"
-            min="-6"
-            max="5"
-            step="0.1"
-            value={heightValue}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setHeightValue(val);
-              moveSelectedHeight(val);
-            }}
-          />
-        </>
-      );
-    }
-
-    if (selectedObject.objectType === "bell") {
-      return (
-        <>
-          <label style={styles.label}>Bell Scale: {scaleValue.toFixed(3)}</label>
-          <input
-            type="range"
-            min="0.005"
-            max="0.03"
-            step="0.001"
-            value={scaleValue}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setScaleValue(val);
-              scaleSelected(val);
-            }}
-          />
-
-          <label style={styles.label}>
-            Bell Height (Y): {heightValue.toFixed(2)}
-          </label>
-          <input
-            type="range"
-            min="-6"
-            max="3"
-            step="0.1"
-            value={heightValue}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setHeightValue(val);
-              moveSelectedHeight(val);
-            }}
-          />
+          <div className="mc-slider-group">
+            <label className="mc-slider-label">
+              <span>Height (Y)</span>
+              <span className="mc-slider-value">{heightValue.toFixed(2)}</span>
+            </label>
+            <input
+              type="range"
+              min="-6"
+              max="6"
+              step="0.1"
+              value={heightValue}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setHeightValue(val);
+                moveSelectedHeight(val);
+              }}
+            />
+          </div>
         </>
       );
     }
@@ -335,8 +427,20 @@ function App() {
   };
 
   return (
-    <div style={{ textAlign: "center" }} onPointerUp={stopDragging}>
-      <h2>Temple Configurator</h2>
+    <div className="mc-root" onPointerUp={stopDragging}>
+      <div className="mc-header">
+        <div className="mc-header-left">
+          <span className="mc-header-icon">🛕</span>
+          <div>
+            <div className="mc-header-title">Mandir Configurator</div>
+            <div className="mc-header-sub">3D TEMPLE DESIGNER</div>
+          </div>
+        </div>
+
+        <div className="mc-selected-badge">
+          Selected: <span>{selectedLabel}</span>
+        </div>
+      </div>
 
       <ModelViewer
         ref={viewerRef}
@@ -347,53 +451,143 @@ function App() {
         selectedIndex={selectedIndex}
       />
 
-      <div style={styles.panel}>
-        <h3 style={{ margin: 0 }}>Controls</h3>
+      <div className="mc-panel">
+        <div className="mc-section">
+          <div className="mc-section-title">ADD TO TEMPLE</div>
 
-        <button onClick={addGanesha}>Add Ganesha</button>
-        <button onClick={addBell}>Add Bell</button>
-        <button onClick={downloadImage}>Download Image</button>
+          <div className="mc-add-card" onClick={addGanesha}>
+            <div className="mc-add-card-icon">🐘</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Ganesha</div>
+              <div className="mc-add-card-hint">Tap to add, drag to place</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
 
-        <button onClick={rotateSelected} disabled={selectedIndex === null}>
-          Rotate Selected
-        </button>
+          <div className="mc-add-card" onClick={addBell01}>
+            <div className="mc-add-card-icon">🔔</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Bell 01</div>
+              <div className="mc-add-card-hint">Add Bell_01</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
 
-        <button onClick={deleteSelected} disabled={selectedIndex === null}>
-          Delete Selected
-        </button>
+          <div className="mc-add-card" onClick={addBell02}>
+            <div className="mc-add-card-icon">🔔</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Bell 02</div>
+              <div className="mc-add-card-hint">Add bell_02</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
 
-        <button onClick={deselect} disabled={selectedIndex === null}>
-          Deselect
-        </button>
+          <div className="mc-add-card" onClick={addBell03}>
+            <div className="mc-add-card-icon">🔔</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Bell 03</div>
+              <div className="mc-add-card-hint">Add Bell_03</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
 
-        {renderObjectControls()}
+          <div className="mc-add-card" onClick={addBell04}>
+            <div className="mc-add-card-icon">🔔</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Bell 04</div>
+              <div className="mc-add-card-hint">Add Bell_04</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
 
-        <button onClick={saveDesign}>Save Design</button>
-        <button onClick={loadDesign}>Load Design</button>
-        <button onClick={exportSTL}>Export STL</button>
+          <div className="mc-add-card" onClick={addChhattar}>
+            <div className="mc-add-card-icon">👑</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Chhattar</div>
+              <div className="mc-add-card-hint">Add top decoration</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
+
+          <div className="mc-add-card" onClick={addKalash}>
+            <div className="mc-add-card-icon">🏺</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Kalash</div>
+              <div className="mc-add-card-hint">Add top Kalash</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
+
+          <div className="mc-add-card" onClick={addNamePatti}>
+            <div className="mc-add-card-icon">🪧</div>
+            <div className="mc-add-card-text">
+              <div className="mc-add-card-name">Mandir Name</div>
+              <div className="mc-add-card-hint">Add name plate</div>
+            </div>
+            <span className="mc-plus-icon">＋</span>
+          </div>
+        </div>
+
+        <div className="mc-divider" />
+
+        <div className="mc-section">
+          <div className="mc-section-title">EDIT SELECTED</div>
+
+          {!selectedObject && (
+            <div className="mc-hint">Click any object to select it</div>
+          )}
+
+          {renderObjectControls()}
+
+          <button
+            className="mc-btn mc-btn-secondary"
+            onClick={rotateSelected}
+            disabled={selectedIndex === null}
+          >
+            <span className="mc-btn-icon">↻</span> Rotate 22.5°
+          </button>
+
+          <button className="mc-btn mc-btn-ghost" onClick={deselect}>
+            Clear Selection
+          </button>
+
+          <button
+            className="mc-btn mc-btn-danger"
+            onClick={deleteSelected}
+            disabled={selectedIndex === null}
+          >
+            <span className="mc-btn-icon">🗑</span> Delete
+          </button>
+        </div>
+
+        <div className="mc-divider" />
+
+        <div className="mc-section">
+          <div className="mc-section-title">PROJECT</div>
+
+          <button className="mc-btn mc-btn-success" onClick={saveDesign}>
+            <span className="mc-btn-icon">💾</span> Save Design
+          </button>
+
+          <button className="mc-btn mc-btn-neutral" onClick={loadDesign}>
+            <span className="mc-btn-icon">📂</span> Load Design
+          </button>
+
+          <button className="mc-btn mc-btn-neutral" onClick={downloadImage}>
+            <span className="mc-btn-icon">🖼</span> Download Image
+          </button>
+
+          <button className="mc-btn mc-btn-export" onClick={exportSTL}>
+            <span className="mc-btn-icon">📦</span> Export STL
+          </button>
+        </div>
+      </div>
+
+      <div className="mc-bottom-hint">
+        ✦ Click a model to select · Scroll to zoom · Drag background to orbit
       </div>
     </div>
   );
 }
-
-const styles = {
-  panel: {
-    position: "fixed",
-    right: "20px",
-    top: "100px",
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    minWidth: "240px",
-  },
-  label: {
-    textAlign: "left",
-    fontWeight: "bold",
-  },
-};
 
 export default App;

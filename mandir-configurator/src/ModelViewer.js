@@ -16,6 +16,7 @@ function STLModel({
   position,
   scale,
   color,
+  materialType,
   rotation,
   spin = 0,
   index,
@@ -50,9 +51,29 @@ function STLModel({
         receiveShadow
       >
         <meshStandardMaterial
-          color={isSelected ? "red" : color}
-          metalness={color === "gold" ? 1 : 0.2}
-          roughness={color === "gold" ? 0.2 : 0.8}
+          color={
+            isSelected
+              ? "red"
+              : materialType === "marble"
+              ? "#f5f5f5"
+              : materialType === "wood"
+              ? "#a47149"
+              : materialType === "gold"
+              ? "#D4AF37"
+              : color
+          }
+          metalness={materialType === "gold" ? 1 : 0.1}
+          roughness={
+            materialType === "marble"
+              ? 0.3
+              : materialType === "wood"
+              ? 0.6
+              : materialType === "gold"
+              ? 0.2
+              : 0.8
+          }
+          clearcoat={materialType === "wood" ? 0.3 : 0.1}
+          clearcoatRoughness={0.2}
         />
       </mesh>
     </group>
@@ -113,6 +134,7 @@ const ModelViewer = forwardRef(function ModelViewer(
 
   return (
     <Canvas
+      onPointerMissed={() => onSelect(null)}
       shadows
       camera={{ position: [0, 4, 16], fov: 45 }}
       gl={{ preserveDrawingBuffer: true }}
@@ -123,7 +145,6 @@ const ModelViewer = forwardRef(function ModelViewer(
     >
       <CameraSetup controlsRef={controlsRef} />
 
-      {/* Better lighting */}
       <ambientLight intensity={0.7} />
       <hemisphereLight intensity={0.7} groundColor="#666666" />
       <directionalLight
